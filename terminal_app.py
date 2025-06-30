@@ -20,7 +20,6 @@ from datetime import datetime # Added for timestamped filenames
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
-from typing import Dict, List, Optional, Union, Any 
 
 # Import Rich for colored terminal output
 from rich.console import Console
@@ -910,6 +909,35 @@ def toggle_filter_selected():
     console.print(f"[bold cyan]Filter '[number] selected' pattern {enabled_status}.[/bold cyan]")
     return config['filter_selected_pattern']
 
+def configure_regions():
+    """Interactively select question and answer regions."""
+    global config
+    try:
+        # Take a fullscreen screenshot once
+        screen_img = pyautogui.screenshot()
+        img = cv2.cvtColor(np.array(screen_img), cv2.COLOR_RGB2BGR)
+
+        cv2.namedWindow("Region Selector", cv2.WINDOW_NORMAL)
+
+        console.print("[bold cyan]Select QUESTION region and press Enter[/bold cyan]")
+        q = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+        if any(q):
+            config['question_region'] = {'x': int(q[0]), 'y': int(q[1]), 'width': int(q[2]), 'height': int(q[3])}
+
+        for label in ['A', 'B', 'C', 'D']:
+            console.print(f"[bold cyan]Select answer region {label} and press Enter[/bold cyan]")
+            r = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+            if any(r):
+                config['answer_regions'][label] = {'x': int(r[0]), 'y': int(r[1]), 'width': int(r[2]), 'height': int(r[3])}
+
+        cv2.destroyWindow("Region Selector")
+        save_config(config)
+        console.print("[bold green]Regions updated and saved.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
+        logging.error(f"Failed to configure regions: {e}", exc_info=True)
+
 def run_accuracy_evaluator_script():
     """Executes the accuracy_evaluator.py script and prints its output."""
     script_path = os.path.join(os.path.dirname(__file__), 'accuracy_evaluator.py')
@@ -960,6 +988,7 @@ def show_help():
     print(" capture / F2   : Capture screen regions, OCR, and find match.")
     print(" autoclick      : Toggle auto-clicking the matched answer region.")
     print(" filterselected : Toggle filtering '[number] selected' pattern from answers.")
+    print(" configpos      : Interactively set question and answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -991,6 +1020,7 @@ if __name__ == "__main__":
     print("\n--- Available Commands ---")
     print("test           - Run the accuracy_evaluator.py script for batch testing")
     print("config         - Show current configuration")
+    print("configpos      - Interactively set question and answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1038,6 +1068,8 @@ if __name__ == "__main__":
                         toggle_auto_click()
                     elif command == "filterselected":
                         toggle_filter_selected()
+                    elif command == "configpos":
+                        configure_regions()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
