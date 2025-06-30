@@ -20,7 +20,6 @@ from datetime import datetime # Added for timestamped filenames
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
-from typing import Dict, List, Optional, Union, Any 
 
 # Import Rich for colored terminal output
 from rich.console import Console
@@ -910,6 +909,68 @@ def toggle_filter_selected():
     console.print(f"[bold cyan]Filter '[number] selected' pattern {enabled_status}.[/bold cyan]")
     return config['filter_selected_pattern']
 
+def _select_region(message: str) -> Optional[Dict[str, int]]:
+    """Helper to let the user draw a box and return the region as a dict."""
+    screen_img = pyautogui.screenshot()
+    img = cv2.cvtColor(np.array(screen_img), cv2.COLOR_RGB2BGR)
+    cv2.namedWindow("Region Selector", cv2.WINDOW_NORMAL)
+    console.print(f"[bold cyan]{message}[/bold cyan] (Press Enter to confirm or Esc to cancel)")
+    box = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+    cv2.destroyWindow("Region Selector")
+    if any(box):
+        return {"x": int(box[0]), "y": int(box[1]), "width": int(box[2]), "height": int(box[3])}
+    console.print("[yellow]Selection cancelled.[/yellow]")
+    return None
+
+
+def configure_question_region():
+    """Interactively select only the question region."""
+    global config
+    try:
+        region = _select_region("Select QUESTION region")
+        if region:
+            config["question_region"] = region
+            save_config(config)
+            console.print("[bold green]Question region updated.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure question region: {e}[/bold red]")
+        logging.error(f"Failed to configure question region: {e}", exc_info=True)
+
+
+def configure_answer_region(label: str):
+    """Interactively select a single answer region given its label."""
+    global config
+    try:
+        region = _select_region(f"Select answer region {label}")
+        if region:
+            config["answer_regions"][label] = region
+            save_config(config)
+            console.print(f"[bold green]Answer region {label} updated.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure region {label}: {e}[/bold red]")
+        logging.error(f"Failed to configure region {label}: {e}", exc_info=True)
+
+
+def configure_all_regions():
+    """Interactively select all question and answer regions."""
+    global config
+    try:
+        region = _select_region("Select QUESTION region")
+        if region:
+            config["question_region"] = region
+        for label in ["A", "B", "C", "D"]:
+            region = _select_region(f"Select answer region {label}")
+            if region:
+                config["answer_regions"][label] = region
+        save_config(config)
+        console.print("[bold green]Regions updated and saved.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
+        logging.error(f"Failed to configure regions: {e}", exc_info=True)
+
 def run_accuracy_evaluator_script():
     """Executes the accuracy_evaluator.py script and prints its output."""
     script_path = os.path.join(os.path.dirname(__file__), 'accuracy_evaluator.py')
@@ -960,6 +1021,12 @@ def show_help():
     print(" capture / F2   : Capture screen regions, OCR, and find match.")
     print(" autoclick      : Toggle auto-clicking the matched answer region.")
     print(" filterselected : Toggle filtering '[number] selected' pattern from answers.")
+    print(" posq           : Interactively set the QUESTION region.")
+    print(" posa           : Interactively set answer region A.")
+    print(" posb           : Interactively set answer region B.")
+    print(" posc           : Interactively set answer region C.")
+    print(" posd           : Interactively set answer region D.")
+    print(" posall         : Interactively set question and all answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -991,6 +1058,12 @@ if __name__ == "__main__":
     print("\n--- Available Commands ---")
     print("test           - Run the accuracy_evaluator.py script for batch testing")
     print("config         - Show current configuration")
+    print("posq           - Interactively set the QUESTION region")
+    print("posa           - Interactively set answer region A")
+    print("posb           - Interactively set answer region B")
+    print("posc           - Interactively set answer region C")
+    print("posd           - Interactively set answer region D")
+    print("posall         - Interactively set question and all answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1038,6 +1111,18 @@ if __name__ == "__main__":
                         toggle_auto_click()
                     elif command == "filterselected":
                         toggle_filter_selected()
+                    elif command == "posq":
+                        configure_question_region()
+                    elif command == "posa":
+                        configure_answer_region("A")
+                    elif command == "posb":
+                        configure_answer_region("B")
+                    elif command == "posc":
+                        configure_answer_region("C")
+                    elif command == "posd":
+                        configure_answer_region("D")
+                    elif command == "posall":
+                        configure_all_regions()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
