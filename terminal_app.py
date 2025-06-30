@@ -1145,14 +1145,6 @@ def show_help():
     print(" autoclick      : Toggle auto-clicking the matched answer region.")
     print(" filterselected : Toggle filtering '[number] selected' pattern from answers.")
     print(" pos            : Configure question and answer regions via GUI.")
-    print(" configpos      : Alias for pos (legacy command).")
-    print(" posq           : Interactively set the QUESTION region.")
-    print(" posa           : Interactively set answer region A.")
-    print(" posb           : Interactively set answer region B.")
-    print(" posc           : Interactively set answer region C.")
-    print(" posd           : Interactively set answer region D.")
-    print(" posall         : Interactively set question and all answer regions.")
-    print(" configpos      : Interactively set question and answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -1185,14 +1177,6 @@ if __name__ == "__main__":
     print("test           - Run the accuracy_evaluator.py script for batch testing")
     print("config         - Show current configuration")
     print("pos            - Configure question and answer regions via GUI")
-    print("configpos      - Alias for pos (legacy command)")
-    print("posq           - Interactively set the QUESTION region")
-    print("posa           - Interactively set answer region A")
-    print("posb           - Interactively set answer region B")
-    print("posc           - Interactively set answer region C")
-    print("posd           - Interactively set answer region D")
-    print("posall         - Interactively set question and all answer regions")
-    print("configpos      - Interactively set question and answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1242,22 +1226,6 @@ if __name__ == "__main__":
                         toggle_filter_selected()
                     elif command == "pos":
                         configure_regions_ui()
-                    elif command == "configpos":
-                        configure_regions_ui()
-                    elif command == "posq":
-                        configure_question_region()
-                    elif command == "posa":
-                        configure_answer_region("A")
-                    elif command == "posb":
-                        configure_answer_region("B")
-                    elif command == "posc":
-                        configure_answer_region("C")
-                    elif command == "posd":
-                        configure_answer_region("D")
-                    elif command == "posall":
-                        configure_all_regions()
-                    elif command == "configpos":
-                        configure_regions()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
