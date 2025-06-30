@@ -1,0 +1,27 @@
+# Core dependencies
+numpy>=1.22.0
+opencv-python>=4.5.5.0
+pandas>=1.4.0
+Pillow>=9.0.0
+pyautogui>=0.9.53
+pynput>=1.7.6
+scikit-learn>=1.0.2
+pywin32>=304; platform_system=='Windows'
+
+# OCR dependencies
+# torch>=1.10.0 - Replaced with specific CUDA version below
+# Install PyTorch with CUDA support using:
+# pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+python-doctr>=0.6.0
+python-doctr[torch]>=0.6.0
+
+# UI and display libraries
+rich>=12.0.0
+colorama>=0.4.4
+prettytable>=2.5.0
+
+# Metric computation
+editdistance>=0.6.0
+
+# For CLI and utilities
+tqdm>=4.62.3

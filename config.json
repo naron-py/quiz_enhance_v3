@@ -1,0 +1,46 @@
+{
+    "question_region": {
+        "x": 115,
+        "y": 680,
+        "width": 680,
+        "height": 200
+    },
+    "answer_regions": {
+        "A": {
+            "x": 390,
+            "y": 880,
+            "width": 550,
+            "height": 90
+        },
+        "B": {
+            "x": 1040,
+            "y": 880,
+            "width": 550,
+            "height": 90
+        },
+        "C": {
+            "x": 390,
+            "y": 975,
+            "width": 550,
+            "height": 90
+        },
+        "D": {
+            "x": 1040,
+            "y": 975,
+            "width": 550,
+            "height": 90
+        }
+    },
+    "match_mode": "TF-IDF Fast",
+    "show_processing_times": true,
+    "auto_click": true,
+    "tfidf_threshold": 0.85,
+    "answer_similarity_threshold": 0.8,
+    "torch_threads": 6,
+    "show_ocr_answer_choices_terminal": true,
+    "capture_fullscreen_on_nomatch": false,
+    "filter_answer_choice_tags": false,
+    "save_all_captured_images": false,
+    "active_database": "all",
+    "filter_selected_pattern": true
+}
