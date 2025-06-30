@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 import json
 import os
-from PIL import Image
+from PIL import Image, ImageTk
+import tkinter as tk
 import pyautogui
 import difflib
 import re
@@ -20,7 +21,6 @@ from datetime import datetime # Added for timestamped filenames
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union, Any
-from typing import Dict, List, Optional, Union, Any 
 
 # Import Rich for colored terminal output
 from rich.console import Console
@@ -910,6 +910,158 @@ def toggle_filter_selected():
     console.print(f"[bold cyan]Filter '[number] selected' pattern {enabled_status}.[/bold cyan]")
     return config['filter_selected_pattern']
 
+def _select_region(message: str) -> Optional[Dict[str, int]]:
+    """Helper to let the user draw a box and return the region as a dict."""
+    screen_img = pyautogui.screenshot()
+    img = cv2.cvtColor(np.array(screen_img), cv2.COLOR_RGB2BGR)
+    cv2.namedWindow("Region Selector", cv2.WINDOW_NORMAL)
+    console.print(f"[bold cyan]{message}[/bold cyan] (Press Enter to confirm or Esc to cancel)")
+    box = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+    cv2.destroyWindow("Region Selector")
+    if any(box):
+        return {"x": int(box[0]), "y": int(box[1]), "width": int(box[2]), "height": int(box[3])}
+    console.print("[yellow]Selection cancelled.[/yellow]")
+    return None
+
+
+def configure_question_region():
+    """Interactively select only the question region."""
+    global config
+    try:
+        region = _select_region("Select QUESTION region")
+        if region:
+            config["question_region"] = region
+            save_config(config)
+            console.print("[bold green]Question region updated.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure question region: {e}[/bold red]")
+        logging.error(f"Failed to configure question region: {e}", exc_info=True)
+
+
+def configure_answer_region(label: str):
+    """Interactively select a single answer region given its label."""
+    global config
+    try:
+        region = _select_region(f"Select answer region {label}")
+        if region:
+            config["answer_regions"][label] = region
+            save_config(config)
+            console.print(f"[bold green]Answer region {label} updated.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure region {label}: {e}[/bold red]")
+        logging.error(f"Failed to configure region {label}: {e}", exc_info=True)
+
+
+def configure_all_regions():
+    """Interactively select all question and answer regions."""
+    global config
+    try:
+        region = _select_region("Select QUESTION region")
+        if region:
+            config["question_region"] = region
+        for label in ["A", "B", "C", "D"]:
+            region = _select_region(f"Select answer region {label}")
+            if region:
+                config["answer_regions"][label] = region
+        save_config(config)
+        console.print("[bold green]Regions updated and saved.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
+        logging.error(f"Failed to configure regions: {e}", exc_info=True)
+
+
+# Backwards compatibility helper
+def configure_regions():
+    """Alias for configure_all_regions (legacy name)."""
+    configure_all_regions()
+
+
+def configure_regions_ui():
+    """Launch a simple Tkinter UI to draw boxes for question and answer regions."""
+    global config
+    try:
+        screenshot = pyautogui.screenshot()
+        width, height = screenshot.size
+        root = tk.Tk()
+        root.title("Position Configurator")
+        root.attributes("-topmost", True)
+        canvas = tk.Canvas(root, width=width, height=height)
+        canvas.pack()
+        tk_img = ImageTk.PhotoImage(screenshot)
+        canvas.create_image(0, 0, anchor="nw", image=tk_img)
+
+        steps = [
+            ("question_region", "QUESTION"),
+            ("A", "Answer A"),
+            ("B", "Answer B"),
+            ("C", "Answer C"),
+            ("D", "Answer D"),
+        ]
+        idx = 0
+        regions: Dict[str, Dict[str, int]] = {}
+        rect = None
+        start_x = start_y = 0
+
+        info = tk.Label(root, text=f"Draw box for {steps[idx][1]} (Esc to cancel)")
+        info.pack()
+
+        def on_press(event):
+            nonlocal rect, start_x, start_y
+            start_x, start_y = event.x, event.y
+            if rect:
+                canvas.delete(rect)
+            rect = canvas.create_rectangle(start_x, start_y, start_x, start_y, outline="red", width=2)
+
+        def on_move(event):
+            if rect:
+                canvas.coords(rect, start_x, start_y, event.x, event.y)
+
+        def on_release(event):
+            nonlocal rect, idx
+            if not rect:
+                return
+            x1, y1 = start_x, start_y
+            x2, y2 = event.x, event.y
+            x = min(x1, x2)
+            y = min(y1, y2)
+            w = abs(x2 - x1)
+            h = abs(y2 - y1)
+            regions[steps[idx][0]] = {"x": x, "y": y, "width": w, "height": h}
+            canvas.delete(rect)
+            rect = None
+            idx += 1
+            if idx >= len(steps):
+                root.quit()
+            else:
+                info.config(text=f"Draw box for {steps[idx][1]} (Esc to cancel)")
+
+        def cancel(event=None):
+            regions.clear()
+            root.quit()
+
+        canvas.bind("<ButtonPress-1>", on_press)
+        canvas.bind("<B1-Motion>", on_move)
+        canvas.bind("<ButtonRelease-1>", on_release)
+        root.bind("<Escape>", cancel)
+
+        root.mainloop()
+        root.destroy()
+
+        if len(regions) == len(steps):
+            config["question_region"] = regions["question_region"]
+            for label in ["A", "B", "C", "D"]:
+                config["answer_regions"][label] = regions[label]
+            save_config(config)
+            console.print("[bold green]Regions updated and saved.[/bold green]")
+        else:
+            console.print("[yellow]Region configuration cancelled.[/yellow]")
+    except Exception as e:
+        logging.error(f"Failed to configure regions via GUI: {e}", exc_info=True)
+        console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
+
 def run_accuracy_evaluator_script():
     """Executes the accuracy_evaluator.py script and prints its output."""
     script_path = os.path.join(os.path.dirname(__file__), 'accuracy_evaluator.py')
@@ -960,6 +1112,8 @@ def show_help():
     print(" capture / F2   : Capture screen regions, OCR, and find match.")
     print(" autoclick      : Toggle auto-clicking the matched answer region.")
     print(" filterselected : Toggle filtering '[number] selected' pattern from answers.")
+    print(" pos            : Configure question and answer regions via GUI.")
+    print(" configpos      : Alias for pos (legacy command).")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -991,6 +1145,8 @@ if __name__ == "__main__":
     print("\n--- Available Commands ---")
     print("test           - Run the accuracy_evaluator.py script for batch testing")
     print("config         - Show current configuration")
+    print("pos            - Configure question and answer regions via GUI")
+    print("configpos      - Alias for pos (legacy command)")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1038,6 +1194,10 @@ if __name__ == "__main__":
                         toggle_auto_click()
                     elif command == "filterselected":
                         toggle_filter_selected()
+                    elif command == "pos":
+                        configure_regions_ui()
+                    elif command == "configpos":
+                        configure_regions_ui()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
