@@ -965,7 +965,7 @@ def configure_all_regions():
             region = _select_region(f"Select answer region {label}")
             if region:
                 config["answer_regions"][label] = region
-=======
+
 def configure_regions():
     """Interactively select question and answer regions."""
     global config
@@ -988,6 +988,7 @@ def configure_regions():
                 config['answer_regions'][label] = {'x': int(r[0]), 'y': int(r[1]), 'width': int(r[2]), 'height': int(r[3])}
 
         cv2.destroyWindow("Region Selector")
+
 
         save_config(config)
         console.print("[bold green]Regions updated and saved.[/bold green]")
@@ -1052,7 +1053,6 @@ def show_help():
     print(" posc           : Interactively set answer region C.")
     print(" posd           : Interactively set answer region D.")
     print(" posall         : Interactively set question and all answer regions.")
-=======
     print(" configpos      : Interactively set question and answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
@@ -1091,7 +1091,6 @@ if __name__ == "__main__":
     print("posc           - Interactively set answer region C")
     print("posd           - Interactively set answer region D")
     print("posall         - Interactively set question and all answer regions")
-=======
     print("configpos      - Interactively set question and answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
@@ -1152,7 +1151,6 @@ if __name__ == "__main__":
                         configure_answer_region("D")
                     elif command == "posall":
                         configure_all_regions()
-=======
                     elif command == "configpos":
                         configure_regions()
                     elif command == "test":
