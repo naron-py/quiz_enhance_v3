@@ -909,6 +909,7 @@ def toggle_filter_selected():
     console.print(f"[bold cyan]Filter '[number] selected' pattern {enabled_status}.[/bold cyan]")
     return config['filter_selected_pattern']
 
+
 def _select_region(message: str) -> Optional[Dict[str, int]]:
     """Helper to let the user draw a box and return the region as a dict."""
     screen_img = pyautogui.screenshot()
@@ -964,6 +965,30 @@ def configure_all_regions():
             region = _select_region(f"Select answer region {label}")
             if region:
                 config["answer_regions"][label] = region
+=======
+def configure_regions():
+    """Interactively select question and answer regions."""
+    global config
+    try:
+        # Take a fullscreen screenshot once
+        screen_img = pyautogui.screenshot()
+        img = cv2.cvtColor(np.array(screen_img), cv2.COLOR_RGB2BGR)
+
+        cv2.namedWindow("Region Selector", cv2.WINDOW_NORMAL)
+
+        console.print("[bold cyan]Select QUESTION region and press Enter[/bold cyan]")
+        q = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+        if any(q):
+            config['question_region'] = {'x': int(q[0]), 'y': int(q[1]), 'width': int(q[2]), 'height': int(q[3])}
+
+        for label in ['A', 'B', 'C', 'D']:
+            console.print(f"[bold cyan]Select answer region {label} and press Enter[/bold cyan]")
+            r = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+            if any(r):
+                config['answer_regions'][label] = {'x': int(r[0]), 'y': int(r[1]), 'width': int(r[2]), 'height': int(r[3])}
+
+        cv2.destroyWindow("Region Selector")
+
         save_config(config)
         console.print("[bold green]Regions updated and saved.[/bold green]")
     except Exception as e:
@@ -1027,6 +1052,8 @@ def show_help():
     print(" posc           : Interactively set answer region C.")
     print(" posd           : Interactively set answer region D.")
     print(" posall         : Interactively set question and all answer regions.")
+=======
+    print(" configpos      : Interactively set question and answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -1064,6 +1091,8 @@ if __name__ == "__main__":
     print("posc           - Interactively set answer region C")
     print("posd           - Interactively set answer region D")
     print("posall         - Interactively set question and all answer regions")
+=======
+    print("configpos      - Interactively set question and answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1123,6 +1152,9 @@ if __name__ == "__main__":
                         configure_answer_region("D")
                     elif command == "posall":
                         configure_all_regions()
+=======
+                    elif command == "configpos":
+                        configure_regions()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
