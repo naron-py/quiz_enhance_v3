@@ -1062,6 +1062,38 @@ def configure_regions_ui():
         logging.error(f"Failed to configure regions via GUI: {e}", exc_info=True)
         console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
 
+def configure_regions():
+    """Interactively select question and answer regions."""
+    global config
+    try:
+        # Take a fullscreen screenshot once
+        screen_img = pyautogui.screenshot()
+        img = cv2.cvtColor(np.array(screen_img), cv2.COLOR_RGB2BGR)
+
+        cv2.namedWindow("Region Selector", cv2.WINDOW_NORMAL)
+
+        console.print("[bold cyan]Select QUESTION region and press Enter[/bold cyan]")
+        q = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+        if any(q):
+            config['question_region'] = {'x': int(q[0]), 'y': int(q[1]), 'width': int(q[2]), 'height': int(q[3])}
+
+        for label in ['A', 'B', 'C', 'D']:
+            console.print(f"[bold cyan]Select answer region {label} and press Enter[/bold cyan]")
+            r = cv2.selectROI("Region Selector", img, showCrosshair=True, fromCenter=False)
+            if any(r):
+                config['answer_regions'][label] = {'x': int(r[0]), 'y': int(r[1]), 'width': int(r[2]), 'height': int(r[3])}
+
+        cv2.destroyWindow("Region Selector")
+
+
+        save_config(config)
+        console.print("[bold green]Regions updated and saved.[/bold green]")
+    except Exception as e:
+        cv2.destroyAllWindows()
+        console.print(f"[bold red]Failed to configure regions: {e}[/bold red]")
+        logging.error(f"Failed to configure regions: {e}", exc_info=True)
+
+
 def run_accuracy_evaluator_script():
     """Executes the accuracy_evaluator.py script and prints its output."""
     script_path = os.path.join(os.path.dirname(__file__), 'accuracy_evaluator.py')
@@ -1114,6 +1146,13 @@ def show_help():
     print(" filterselected : Toggle filtering '[number] selected' pattern from answers.")
     print(" pos            : Configure question and answer regions via GUI.")
     print(" configpos      : Alias for pos (legacy command).")
+    print(" posq           : Interactively set the QUESTION region.")
+    print(" posa           : Interactively set answer region A.")
+    print(" posb           : Interactively set answer region B.")
+    print(" posc           : Interactively set answer region C.")
+    print(" posd           : Interactively set answer region D.")
+    print(" posall         : Interactively set question and all answer regions.")
+    print(" configpos      : Interactively set question and answer regions.")
     print(" test           : Run the accuracy_evaluator.py script for batch testing.")
     print(" config         : Show current configuration.")
     print(" data <name>: Switch database. Options: default, magic, muggle, all")
@@ -1147,6 +1186,13 @@ if __name__ == "__main__":
     print("config         - Show current configuration")
     print("pos            - Configure question and answer regions via GUI")
     print("configpos      - Alias for pos (legacy command)")
+    print("posq           - Interactively set the QUESTION region")
+    print("posa           - Interactively set answer region A")
+    print("posb           - Interactively set answer region B")
+    print("posc           - Interactively set answer region C")
+    print("posd           - Interactively set answer region D")
+    print("posall         - Interactively set question and all answer regions")
+    print("configpos      - Interactively set question and answer regions")
     print("data <name>    - Switch database options (default, magic, muggle, all)")
     print("set <key> <val> - Set configuration values")
     print("help           - Show complete help message")
@@ -1198,6 +1244,20 @@ if __name__ == "__main__":
                         configure_regions_ui()
                     elif command == "configpos":
                         configure_regions_ui()
+                    elif command == "posq":
+                        configure_question_region()
+                    elif command == "posa":
+                        configure_answer_region("A")
+                    elif command == "posb":
+                        configure_answer_region("B")
+                    elif command == "posc":
+                        configure_answer_region("C")
+                    elif command == "posd":
+                        configure_answer_region("D")
+                    elif command == "posall":
+                        configure_all_regions()
+                    elif command == "configpos":
+                        configure_regions()
                     elif command == "test":
                         run_accuracy_evaluator_script()
                     elif command == "capture" or command == "f2":
